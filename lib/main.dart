@@ -304,6 +304,7 @@ class _MyHomePageState extends State<MyHomePage> {
         ///默认不给定位权限就更新北京市的天气信息
         updateWeather("101010100");
         currentLocation="北京市";
+
         return false;
       }
     }
