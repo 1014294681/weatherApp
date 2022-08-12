@@ -25,6 +25,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+
     return ScreenUtilInit(
       designSize: const Size(411,982),
       minTextAdapt: true,
@@ -224,7 +225,7 @@ class _MyHomePageState extends State<MyHomePage> {
         if (result.isNotEmpty) {
           ///获取定位城市名称
           if (result["district"]!="") {
-            currentLocation = result.putIfAbsent("district", () => -1).toString();
+            currentLocation = result.putIfAbsent("district", () => "-1").toString();
           } else {
             currentLocation = result.putIfAbsent("city", () => "-1").toString();
           }
@@ -288,6 +289,7 @@ class _MyHomePageState extends State<MyHomePage> {
     status = await Permission.location.status;
 
     if (status == PermissionStatus.granted) {
+      _startLocation();
       return true;
     } else {
       //未授权则发起一次申请
@@ -339,6 +341,7 @@ class _MyHomePageState extends State<MyHomePage> {
     _weatherNowResp = await FlutterQweather.instance.getWeatherNow(location);
     _weatherDailyResp = (await FlutterQweather.instance
         .getWeatherDaily(location, WeatherDailyForecast.WeatherForecast7Day))!;
+    print('1');
     _hourlyResp = await FlutterQweather.instance.getWeatherHourly(
         location, WeatherHourlyForecast.WeatherForecast24Hour);
     //_dailyIndicesResp=await FlutterQweather.instance.getIndices3Day(location);
