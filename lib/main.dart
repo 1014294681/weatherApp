@@ -13,6 +13,7 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'dart:io';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
+import 'package:simple_animations/simple_animations.dart';
 
 import 'citySearch.dart';
 
@@ -399,13 +400,13 @@ class _MyHomePageState extends State<MyHomePage> {
             fontFamily: "Noto_Sans_SC");
       } else if (double.parse(_weatherNowResp!.now.temp) >= 30) {
         currentWeatherStyle60 = TextStyle(
-            color: Colors.red,
+            color: Colors.blueGrey,
             fontSize: 60.sp,
             fontWeight: FontWeight.bold,
             fontFamily: "Noto_Sans_SC");
       } else if (double.parse(_weatherNowResp!.now.temp) >= 20) {
         currentWeatherStyle60 = TextStyle(
-            color: Colors.blueGrey,
+            color: Colors.lightBlueAccent,
             fontSize: 60.sp,
             fontWeight: FontWeight.bold,
             fontFamily: "Noto_Sans_SC");
@@ -419,7 +420,7 @@ class _MyHomePageState extends State<MyHomePage> {
 
       currentTemperature = "${_weatherNowResp!.now.temp}°";
       todayWeather =
-          "${_weatherDailyResp.daily[0].textDay} ${_weatherDailyResp.daily[0].tempMax}°/${_weatherDailyResp.daily[0].tempMin}°C";
+          "${_weatherNowResp!.now.text} ${_weatherDailyResp.daily[0].tempMax}°/${_weatherDailyResp.daily[0].tempMin}°C";
       //六日天气预报
       List<WeatherDaily> list = _weatherDailyResp.daily;
       int i = 0;
@@ -542,7 +543,40 @@ class _MyHomePageState extends State<MyHomePage> {
                 child: Stack(
                   children: [
                     Container(
-                      color: Colors.lightBlueAccent,
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          tileMode: TileMode.mirror,
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomLeft,
+                          colors: [
+                            Color(0xffC17B18),
+                            Color(0xffE3281F),
+                            Color(0xff433D23),
+                          ],
+                          stops: [
+                            0,
+                            0.3,
+                            1,
+                          ],
+                        ),
+                        backgroundBlendMode: BlendMode.exclusion,
+                      ),
+                      child: PlasmaRenderer(
+                        type: PlasmaType.infinity,
+                        particles: 24,
+                        color: const Color(0x449ce3d7),
+                        blur: 0.07,
+                        size: 0.1,
+                        speed: 1.97,
+                        offset: 4.63,
+                        blendMode: BlendMode.screen,
+                        particleType: ParticleType.circle,
+                        variation1: 0.26,
+                        variation2: 0.29,
+                        variation3: 0.39,
+                        rotation: 1.16,
+                        fps: 60,
+                      ),
                     ),
                     SafeArea(
                         child: Column(
@@ -613,8 +647,8 @@ class _MyHomePageState extends State<MyHomePage> {
                               Container(
                                   margin:
                                       const EdgeInsets.only(left: 40, top: 0).r,
-                                  child: Text(todayWeather,
-                                      style: textStyle16)),
+                                  child:
+                                      Text(todayWeather, style: textStyle16)),
                             ],
                           ),
                           Card(
