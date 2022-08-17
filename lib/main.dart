@@ -14,6 +14,7 @@ import 'dart:io';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:simple_animations/simple_animations.dart';
+import 'package:flutter_weather_bg_null_safety/flutter_weather_bg.dart';
 
 import 'citySearch.dart';
 
@@ -73,8 +74,8 @@ class _MyHomePageState extends State<MyHomePage> {
       fontFamily: "Noto_Sans_SC");
   TextStyle textStyle20 = TextStyle(
       color: Colors.blueGrey.shade700,
-      fontSize: 20.sp,
-      fontWeight: FontWeight.w500,
+      fontSize: 22.sp,
+      fontWeight: FontWeight.bold,
       fontFamily: "Noto_Sans_SC");
   TextStyle textStyle60 = TextStyle(
       color: Colors.white,
@@ -107,34 +108,98 @@ class _MyHomePageState extends State<MyHomePage> {
   late Map<String, Object> weatherMap4 = {};
   late Map<String, Object> weatherMap5 = {};
   late Map<String, Object> weatherMap6 = {};
-  //今日风向
+
+  /// 今日风向
   late String windDirection = "西北风";
 
-  //今日风力等级
+  /// 今日风力等级
   late String windScale = "3级";
 
-  //今日相对湿度
+  /// 今日相对湿度
   late String relativeHumidity = "50%";
 
-  //今日紫外线强度等级
+  /// 今日紫外线强度等级
   late String ultravioletIntensity = "3级";
 
-  //今日体感温度
+  /// 今日体感温度
   late String apparentTemperature = "33度";
 
-  //今日降水量
+  /// 今日降水量
   late String precipitation = "30mm";
 
-  //今日能见度
+  /// 今日能见度
   late String visibility = "10公里";
 
-  //今日生活指数
+  /// 今日生活指数
   late String livingIndex = "今日总体较为舒适，空气质量优，体感温度适宜，紫外线强，建议穿着短袖，防止中暑，不宜外出运动。";
 
   @override
   void initState() {
     super.initState();
     initQweather();
+    initDataMap();
+    initLocation();
+  }
+
+  /// 初始化并开启定位
+  void initLocation() {
+    /// 设置是否已经包含高德隐私政策并弹窗展示显示用户查看，如果未包含或者没有弹窗展示，高德定位SDK将不会工作
+    ///
+    /// 高德SDK合规使用方案请参考官网地址：https://lbs.amap.com/news/sdkhgsy
+    /// <b>必须保证在调用定位功能之前调用， 建议首次启动App时弹出《隐私政策》并取得用户同意</b>
+    ///
+    /// 高德SDK合规使用方案请参考官网地址：https://lbs.amap.com/news/sdkhgsy
+    ///
+    /// [hasContains] 隐私声明中是否包含高德隐私政策说明
+    ///
+    /// [hasShow] 隐私权政策是否弹窗展示告知用户
+    AMapFlutterLocation.updatePrivacyShow(true, true);
+
+    /// 设置是否已经取得用户同意，如果未取得用户同意，高德定位SDK将不会工作
+    ///
+    /// 高德SDK合规使用方案请参考官网地址：https://lbs.amap.com/news/sdkhgsy
+    ///
+    /// <b>必须保证在调用定位功能之前调用, 建议首次启动App时弹出《隐私政策》并取得用户同意</b>
+    ///
+    /// [hasAgree] 隐私权政策是否已经取得用户同意
+    AMapFlutterLocation.updatePrivacyAgree(true);
+
+    /// 动态申请定位权限
+    _requestPermission();
+
+    ///设置Android和iOS的apiKey<br>
+    ///key的申请请参考高德开放平台官网说明<br>
+    ///Android: https://lbs.amap.com/api/android-location-sdk/guide/create-project/get-key
+    ///iOS: https://lbs.amap.com/api/ios-location-sdk/guide/create-project/get-key
+    AMapFlutterLocation.setApiKey(
+        '73f2e5ebf14a155ffbb15eed52f3ead8', '73f2e5ebf14a155ffbb15eed52f3ead8');
+
+    ///注册定位结果监听
+    _locationListener = _locationPlugin
+        .onLocationChanged()
+        .listen((Map<String, Object> result) {
+      setState(() {
+        if (result.isNotEmpty) {
+          ///获取定位城市名称
+          if (result["district"] != "") {
+            currentLocation =
+                result.putIfAbsent("district", () => "-1").toString();
+          } else {
+            currentLocation = result.putIfAbsent("city", () => "-1").toString();
+          }
+
+          ///-------------更新天气信息并重新构造页面----------------
+          ///和风天气api只能接受小数点后两位精度的经纬度定位，需要进行处理
+          updateWeather(
+              "${(result.putIfAbsent("longitude", () => "-1") as double).toStringAsFixed(2)},${(result.putIfAbsent("latitude", () => "") as double).toStringAsFixed(2)}");
+          _stopLocation();
+        }
+      });
+    });
+  }
+
+  /// 初始化数据映射
+  void initDataMap() {
     //初始化map
     weatherMap1 = {
       "count": 0,
@@ -199,66 +264,10 @@ class _MyHomePageState extends State<MyHomePage> {
     for (int i = 0; i <= 5; i++) {
       mapList[i]["count"] = i;
     }
-
-    /// 设置是否已经包含高德隐私政策并弹窗展示显示用户查看，如果未包含或者没有弹窗展示，高德定位SDK将不会工作
-    ///
-    /// 高德SDK合规使用方案请参考官网地址：https://lbs.amap.com/news/sdkhgsy
-    /// <b>必须保证在调用定位功能之前调用， 建议首次启动App时弹出《隐私政策》并取得用户同意</b>
-    ///
-    /// 高德SDK合规使用方案请参考官网地址：https://lbs.amap.com/news/sdkhgsy
-    ///
-    /// [hasContains] 隐私声明中是否包含高德隐私政策说明
-    ///
-    /// [hasShow] 隐私权政策是否弹窗展示告知用户
-    AMapFlutterLocation.updatePrivacyShow(true, true);
-
-    /// 设置是否已经取得用户同意，如果未取得用户同意，高德定位SDK将不会工作
-    ///
-    /// 高德SDK合规使用方案请参考官网地址：https://lbs.amap.com/news/sdkhgsy
-    ///
-    /// <b>必须保证在调用定位功能之前调用, 建议首次启动App时弹出《隐私政策》并取得用户同意</b>
-    ///
-    /// [hasAgree] 隐私权政策是否已经取得用户同意
-    AMapFlutterLocation.updatePrivacyAgree(true);
-
-    /// 动态申请定位权限
-    _requestPermission();
-
-    ///设置Android和iOS的apiKey<br>
-    ///key的申请请参考高德开放平台官网说明<br>
-    ///Android: https://lbs.amap.com/api/android-location-sdk/guide/create-project/get-key
-    ///iOS: https://lbs.amap.com/api/ios-location-sdk/guide/create-project/get-key
-    AMapFlutterLocation.setApiKey(
-        '73f2e5ebf14a155ffbb15eed52f3ead8', '73f2e5ebf14a155ffbb15eed52f3ead8');
-
-    ///注册定位结果监听
-    _locationListener = _locationPlugin
-        .onLocationChanged()
-        .listen((Map<String, Object> result) {
-      setState(() {
-        if (result.isNotEmpty) {
-          ///获取定位城市名称
-          if (result["district"] != "") {
-            currentLocation =
-                result.putIfAbsent("district", () => "-1").toString();
-          } else {
-            currentLocation = result.putIfAbsent("city", () => "-1").toString();
-          }
-
-          ///-------------更新天气信息并重新构造页面----------------
-          ///和风天气api只能接受小数点后两位精度的经纬度定位，需要进行处理
-          updateWeather(
-              "${(result.putIfAbsent("longitude", () => "-1") as double).toStringAsFixed(2)},${(result.putIfAbsent("latitude", () => "") as double).toStringAsFixed(2)}");
-          _stopLocation();
-        }
-      });
-    });
   }
 
   @override
   void dispose() {
-    super.dispose();
-
     ///移除定位监听
     if (null != _locationListener) {
       _locationListener?.cancel();
@@ -266,9 +275,11 @@ class _MyHomePageState extends State<MyHomePage> {
 
     ///销毁定位
     _locationPlugin.destroy();
+
+    super.dispose();
   }
 
-  ///设置定位参数
+  /// 设置定位参数
   void _setLocationOption() {
     AMapLocationOption locationOption = AMapLocationOption();
 
@@ -326,19 +337,19 @@ class _MyHomePageState extends State<MyHomePage> {
     }
   }
 
-  ///开始定位
+  /// 开始定位
   void _startLocation() {
     ///开始定位之前设置定位参数
     _setLocationOption();
     _locationPlugin.startLocation();
   }
 
-  ///停止定位
+  /// 停止定位
   void _stopLocation() {
     _locationPlugin.stopLocation();
   }
 
-  // 初始化 Qweather
+  /// 初始化 Qweather
   Future<void> initQweather() async {
     QweatherConfig config = QweatherConfig(
         publicIdForAndroid: 'HE2208051101011006',
@@ -350,7 +361,7 @@ class _MyHomePageState extends State<MyHomePage> {
     await FlutterQweather.instance.init(config);
   }
 
-  //根据定位更新天气信息
+  /// 根据定位更新天气信息
   Future<void> updateWeather(String location) async {
     _weatherNowResp = await FlutterQweather.instance.getWeatherNow(location);
     _weatherDailyResp = (await FlutterQweather.instance
@@ -502,12 +513,13 @@ class _MyHomePageState extends State<MyHomePage> {
     mapList[0]["weekday"] = "今天";
   }
 
-  ///将获取到的日期格式化
+  /// 将获取到的日期格式化
   String dateFormat(String date) {
     date = "${date.substring(5, 7)}/${date.substring(8, 10)}";
     return date;
   }
 
+  /// 查找六日最高气温
   double findMax(List<Map<String, Object>> mapList) {
     List<double> data = [];
     for (var element in mapList) {
@@ -516,6 +528,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return data.reduce(max);
   }
 
+  /// 查找六日最低气温
   double findMin(List<Map<String, Object>> mapList) {
     List<double> data = [];
     for (var element in mapList) {
@@ -524,6 +537,7 @@ class _MyHomePageState extends State<MyHomePage> {
     return data.reduce(min);
   }
 
+  /// 隐藏键盘
   void hideKeyboard(BuildContext context) {
     FocusScopeNode currentFocus = FocusScope.of(context);
     if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
@@ -542,42 +556,7 @@ class _MyHomePageState extends State<MyHomePage> {
                 },
                 child: Stack(
                   children: [
-                    Container(
-                      decoration: const BoxDecoration(
-                        gradient: LinearGradient(
-                          tileMode: TileMode.mirror,
-                          begin: Alignment.topLeft,
-                          end: Alignment.bottomLeft,
-                          colors: [
-                            Color(0xffC17B18),
-                            Color(0xffE3281F),
-                            Color(0xff433D23),
-                          ],
-                          stops: [
-                            0,
-                            0.3,
-                            1,
-                          ],
-                        ),
-                        backgroundBlendMode: BlendMode.exclusion,
-                      ),
-                      child: PlasmaRenderer(
-                        type: PlasmaType.infinity,
-                        particles: 24,
-                        color: const Color(0x449ce3d7),
-                        blur: 0.07,
-                        size: 0.1,
-                        speed: 1.97,
-                        offset: 4.63,
-                        blendMode: BlendMode.screen,
-                        particleType: ParticleType.circle,
-                        variation1: 0.26,
-                        variation2: 0.29,
-                        variation3: 0.39,
-                        rotation: 1.16,
-                        fps: 60,
-                      ),
-                    ),
+                    _buildBackground(),
                     SafeArea(
                         child: Column(
                             mainAxisAlignment: MainAxisAlignment.start,
@@ -651,828 +630,704 @@ class _MyHomePageState extends State<MyHomePage> {
                                       Text(todayWeather, style: textStyle16)),
                             ],
                           ),
-                          Card(
-                            //color: Colors.blueAccent,
-                            color: Colors.white70,
-                            elevation: 4,
-                            margin: const EdgeInsets.only(
-                                    left: 40, top: 30, right: 40, bottom: 0)
-                                .r,
-                            child: Container(
-                              margin: const EdgeInsets.only(
-                                      top: 15, bottom: 15, left: 9, right: 9)
-                                  .r,
-                              child: Row(
-                                children: [
-                                  Column(
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                left: 0, bottom: 0, right: 10.6)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[0]
-                                                .putIfAbsent("date", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                          right: 10.6,
-                                          left: 0,
-                                          top: 5,
-                                        ).r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[0]
-                                                .putIfAbsent(
-                                                    "weekday", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                                right: 14.6, left: 4, top: 5)
-                                            .r,
-                                        child: Image(
-                                          image: AssetImage(mapList[0]
-                                              .putIfAbsent(
-                                                  "imageDay", () => "-1")
-                                              .toString()),
-                                          height: 32.w,
-                                          width: 32.w,
-                                        ),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                right: 10.6, top: 5, bottom: 50)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[0]
-                                                .putIfAbsent(
-                                                    "maxTemp", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                right: 10.6, top: 50)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[0]
-                                                .putIfAbsent(
-                                                    "minTemp", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                                right: 14.6, left: 4, top: 5)
-                                            .r,
-                                        child: Image(
-                                          image: AssetImage(mapList[0]
-                                              .putIfAbsent(
-                                                  "imageNight", () => "-1")
-                                              .toString()),
-                                          height: 32.w,
-                                          width: 32.w,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  //------------分割线--------------
-
-                                  Column(
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                left: 10.6, right: 10.6)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[1]
-                                                .putIfAbsent("date", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                right: 10.6, left: 10.6, top: 5)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[1]
-                                                .putIfAbsent(
-                                                    "weekday", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                                top: 5, left: 14.6, right: 14.6)
-                                            .r,
-                                        child: Image(
-                                          image: AssetImage(mapList[1]
-                                              .putIfAbsent(
-                                                  "imageDay", () => "-1")
-                                              .toString()),
-                                          height: 32.w,
-                                          width: 32.w,
-                                        ),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                top: 5,
-                                                bottom: 50,
-                                                left: 10.6,
-                                                right: 10.6)
-                                            .r,
-                                        alignment: Alignment.center,
-                                        width: 40.w,
-                                        child: Text(
-                                            mapList[1]
-                                                .putIfAbsent(
-                                                    "maxTemp", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                top: 50,
-                                                left: 10.6,
-                                                right: 10.6)
-                                            .r,
-                                        alignment: Alignment.center,
-                                        width: 40.w,
-                                        child: Text(
-                                            mapList[1]
-                                                .putIfAbsent(
-                                                    "minTemp", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                                top: 5, left: 14.6, right: 14.6)
-                                            .r,
-                                        child: Image(
-                                          image: AssetImage(mapList[1]
-                                              .putIfAbsent(
-                                                  "imageNight", () => "-1")
-                                              .toString()),
-                                          height: 32.w,
-                                          width: 32.w,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  //------------分割线--------------
-
-                                  Column(
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                left: 10.6, right: 10.6)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[2]
-                                                .putIfAbsent("date", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                right: 10.6, left: 10.6, top: 5)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[2]
-                                                .putIfAbsent(
-                                                    "weekday", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                                top: 5, left: 14.6, right: 14.6)
-                                            .r,
-                                        child: Image(
-                                          image: AssetImage(mapList[2]
-                                              .putIfAbsent(
-                                                  "imageDay", () => "-1")
-                                              .toString()),
-                                          height: 32.w,
-                                          width: 32.w,
-                                        ),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                top: 5,
-                                                bottom: 50,
-                                                left: 10.6,
-                                                right: 10.6)
-                                            .r,
-                                        alignment: Alignment.center,
-                                        width: 40.w,
-                                        child: Text(
-                                            mapList[2]
-                                                .putIfAbsent(
-                                                    "maxTemp", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                top: 50,
-                                                left: 10.6,
-                                                right: 10.6)
-                                            .r,
-                                        alignment: Alignment.center,
-                                        width: 40.w,
-                                        child: Text(
-                                            mapList[2]
-                                                .putIfAbsent(
-                                                    "minTemp", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                                top: 5, left: 14.6, right: 14.6)
-                                            .r,
-                                        child: Image(
-                                          image: AssetImage(mapList[2]
-                                              .putIfAbsent(
-                                                  "imageNight", () => "-1")
-                                              .toString()),
-                                          height: 32.w,
-                                          width: 32.w,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  //------------分割线--------------
-
-                                  Column(
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                left: 10.6, right: 10.6)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[3]
-                                                .putIfAbsent("date", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                right: 10.6, left: 10.6, top: 5)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[3]
-                                                .putIfAbsent(
-                                                    "weekday", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                                top: 5, left: 14.6, right: 14.6)
-                                            .r,
-                                        child: Image(
-                                          image: AssetImage(mapList[3]
-                                              .putIfAbsent(
-                                                  "imageDay", () => "-1")
-                                              .toString()),
-                                          height: 32.w,
-                                          width: 32.w,
-                                        ),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                top: 5,
-                                                bottom: 50,
-                                                left: 10.6,
-                                                right: 10.6)
-                                            .r,
-                                        alignment: Alignment.center,
-                                        width: 40.w,
-                                        child: Text(
-                                            mapList[3]
-                                                .putIfAbsent(
-                                                    "maxTemp", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                top: 50,
-                                                left: 10.6,
-                                                right: 10.6)
-                                            .r,
-                                        alignment: Alignment.center,
-                                        width: 40.w,
-                                        child: Text(
-                                            mapList[3]
-                                                .putIfAbsent(
-                                                    "minTemp", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                                top: 5, left: 14.6, right: 14.6)
-                                            .r,
-                                        child: Image(
-                                          image: AssetImage(mapList[3]
-                                              .putIfAbsent(
-                                                  "imageNight", () => "-1")
-                                              .toString()),
-                                          height: 32.w,
-                                          width: 32.w,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  //------------分割线--------------
-
-                                  Column(
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                left: 10.6, right: 10.6)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[4]
-                                                .putIfAbsent("date", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                right: 10.6, left: 10.6, top: 5)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[4]
-                                                .putIfAbsent(
-                                                    "weekday", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                                top: 5, left: 14.6, right: 14.6)
-                                            .r,
-                                        child: Image(
-                                          image: AssetImage(mapList[4]
-                                              .putIfAbsent(
-                                                  "imageDay", () => "-1")
-                                              .toString()),
-                                          height: 32.w,
-                                          width: 32.w,
-                                        ),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                top: 5,
-                                                bottom: 50,
-                                                left: 10.6,
-                                                right: 10.6)
-                                            .r,
-                                        alignment: Alignment.center,
-                                        width: 40.w,
-                                        child: Text(
-                                            mapList[4]
-                                                .putIfAbsent(
-                                                    "maxTemp", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                top: 50,
-                                                left: 10.6,
-                                                right: 10.6)
-                                            .r,
-                                        alignment: Alignment.center,
-                                        width: 40.w,
-                                        child: Text(
-                                            mapList[4]
-                                                .putIfAbsent(
-                                                    "minTemp", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                                top: 5, left: 14.6, right: 14.6)
-                                            .r,
-                                        child: Image(
-                                          image: AssetImage(mapList[4]
-                                              .putIfAbsent(
-                                                  "imageNight", () => "-1")
-                                              .toString()),
-                                          height: 32.w,
-                                          width: 32.w,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-
-                                  //------------分割线--------------
-
-                                  Column(
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                right: 0, bottom: 0, left: 10.6)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[5]
-                                                .putIfAbsent("date", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                          left: 10.6,
-                                          right: 0,
-                                          top: 5,
-                                        ).r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[5]
-                                                .putIfAbsent(
-                                                    "weekday", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                                left: 14.6, right: 4, top: 5)
-                                            .r,
-                                        child: Image(
-                                          image: AssetImage(mapList[5]
-                                              .putIfAbsent(
-                                                  "imageDay", () => "-1")
-                                              .toString()),
-                                          height: 32.w,
-                                          width: 32.w,
-                                        ),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                left: 10.6, top: 5, bottom: 50)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[5]
-                                                .putIfAbsent(
-                                                    "maxTemp", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                left: 10.6, top: 50)
-                                            .r,
-                                        width: 40.w,
-                                        alignment: Alignment.center,
-                                        child: Text(
-                                            mapList[5]
-                                                .putIfAbsent(
-                                                    "minTemp", () => "-1")
-                                                .toString(),
-                                            style: textStyle16),
-                                      ),
-                                      Padding(
-                                        padding: const EdgeInsets.only(
-                                                left: 14.6, right: 4, top: 5)
-                                            .r,
-                                        child: Image(
-                                          image: AssetImage(mapList[5]
-                                              .putIfAbsent(
-                                                  "imageNight", () => "-1")
-                                              .toString()),
-                                          height: 32.w,
-                                          width: 32.w,
-                                        ),
-                                      ),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                          ),
-                          Card(
-                            color: Colors.white70,
-                            elevation: 4,
-                            margin: const EdgeInsets.only(
-                                    top: 30, left: 40, right: 40)
-                                .r,
-                            child: Container(
-                              margin: const EdgeInsets.only(
-                                      top: 15, bottom: 15, left: 9)
-                                  .r,
-                              child: Row(
-                                children: [
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.only(
-                                                right: 5, top: 5)
-                                            .r,
-                                        child: Image(
-                                          image: const AssetImage(
-                                              "asset/images/wind.png"),
-                                          width: 32.w,
-                                          height: 32.w,
-                                        ),
-                                      ),
-                                      Container(
-                                          margin: const EdgeInsets.only(
-                                                  top: 30, right: 5)
-                                              .r,
-                                          child: Image(
-                                            image: const AssetImage(
-                                                "asset/images/kongqishidu.png"),
-                                            width: 32.w,
-                                            height: 32.w,
-                                          )),
-                                      Container(
-                                          margin: const EdgeInsets.only(
-                                                  top: 30, right: 5)
-                                              .r,
-                                          child: Image(
-                                            image: const AssetImage(
-                                                "asset/images/sunny.png"),
-                                            width: 32.w,
-                                            height: 32.w,
-                                          )),
-                                    ],
-                                  ),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.only().r,
-                                        child: Text(windDirection,
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin:
-                                            const EdgeInsets.only(bottom: 20).r,
-                                        child:
-                                            Text(windScale, style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only().r,
-                                        child: Text("相对湿度", style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin:
-                                            const EdgeInsets.only(bottom: 25).r,
-                                        child: Text(relativeHumidity,
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only().r,
-                                        child:
-                                            Text("紫外线强度等级", style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only().r,
-                                        child: Text(ultravioletIntensity,
-                                            style: textStyle16),
-                                      ),
-                                    ],
-                                  ),
-                                  Column(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                          margin: const EdgeInsets.only(
-                                                  right: 5,
-                                                  bottom: 0,
-                                                  top: 5,
-                                                  left: 52)
-                                              .r,
-                                          child: Image(
-                                            image: const AssetImage(
-                                                "asset/images/tiwenji.png"),
-                                            width: 32.w,
-                                            height: 32.w,
-                                          )),
-                                      Container(
-                                          margin: const EdgeInsets.only(
-                                                  top: 30, right: 5, left: 52)
-                                              .r,
-                                          child: Image(
-                                            image: const AssetImage(
-                                                "asset/images/xiaoshijiangyuliang.png"),
-                                            width: 32.w,
-                                            height: 32.w,
-                                          )),
-                                      Container(
-                                          margin: const EdgeInsets.only(
-                                                  top: 30, right: 5, left: 52)
-                                              .r,
-                                          child: Image(
-                                            image: const AssetImage(
-                                                "asset/images/daolu-mian.png"),
-                                            width: 32.w,
-                                            height: 32.w,
-                                          )),
-                                    ],
-                                  ),
-                                  Column(
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    children: [
-                                      Container(
-                                        margin: const EdgeInsets.only().r,
-                                        child: Text("体感温度", style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin:
-                                            const EdgeInsets.only(bottom: 20).r,
-                                        child: Text(apparentTemperature,
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only().r,
-                                        child: Text("降水量", style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin:
-                                            const EdgeInsets.only(bottom: 25).r,
-                                        child: Text(precipitation,
-                                            style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only().r,
-                                        child: Text("可见度", style: textStyle16),
-                                      ),
-                                      Container(
-                                        margin: const EdgeInsets.only().r,
-                                        child: Text(visibility,
-                                            style: textStyle16),
-                                      ),
-                                    ],
-                                  )
-                                ],
-                              ),
-                            ),
-                          ),
-                          Card(
-                            color: Colors.white70,
-                            elevation: 4,
-                            margin: const EdgeInsets.only(top: 30, left: 40).r,
-                            child: Container(
-                              width: 330.w,
-                              alignment: Alignment.bottomLeft,
-                              margin:
-                                  const EdgeInsets.only(left: 9, right: 9).r,
-                              child: Text(livingIndex,
-                                  strutStyle: const StrutStyle(leading: 0.9),
-                                  style: TextStyle(
-                                      color: Colors.blueGrey.shade700,
-                                      fontSize: 16.sp,
-                                      fontWeight: FontWeight.w500,
-                                      wordSpacing: 1.5,
-                                      fontFamily: "Noto_Sans_SC"),
-                                  softWrap: true,
-                                  textAlign: TextAlign.left),
-                            ),
-                          )
+                          _buildReportCard(),
+                          _buildInfoCard(),
+                          _buildLivingIndexCard()
                         ])),
-                    Positioned(
-                      bottom: 410.w,
-                      right: 25.h,
-                      child: SizedBox(
-                        width: 370.w,
-                        height: 110.h,
-                        child: SfCartesianChart(
-                          plotAreaBorderWidth: 0,
-                          primaryXAxis: CategoryAxis(
-                              majorGridLines: const MajorGridLines(width: 0),
-                              majorTickLines: const MajorTickLines(width: 0),
-                              isVisible: false),
-                          series: <ChartSeries>[
-                            LineSeries<ChartData, String>(
-                                dataSource: [
-                                  // Bind data source
-                                  ChartData(
-                                      '0',
-                                      double.parse(
-                                          mapList[0]["minTemp"].toString())),
-                                  ChartData(
-                                      '1',
-                                      double.parse(
-                                          mapList[1]["minTemp"].toString())),
-                                  ChartData(
-                                      '2',
-                                      double.parse(
-                                          mapList[2]["minTemp"].toString())),
-                                  ChartData(
-                                      '3',
-                                      double.parse(
-                                          mapList[3]["minTemp"].toString())),
-                                  ChartData(
-                                      '4',
-                                      double.parse(
-                                          mapList[4]["minTemp"].toString())),
-                                  ChartData(
-                                      '5',
-                                      double.parse(
-                                          mapList[5]["minTemp"].toString())),
-                                ],
-                                color: Colors.blue,
-                                width: 2,
-                                xValueMapper: (ChartData data, _) => data.x,
-                                yValueMapper: (ChartData data, _) => data.y),
-                            LineSeries<ChartData, String>(
-                              dataSource: [
-                                // Bind data source
-                                ChartData(
-                                    '0',
-                                    double.parse(
-                                        mapList[0]["maxTemp"].toString())),
-                                ChartData(
-                                    '1',
-                                    double.parse(
-                                        mapList[1]["maxTemp"].toString())),
-                                ChartData(
-                                    '2',
-                                    double.parse(
-                                        mapList[2]["maxTemp"].toString())),
-                                ChartData(
-                                    '3',
-                                    double.parse(
-                                        mapList[3]["maxTemp"].toString())),
-                                ChartData(
-                                    '4',
-                                    double.parse(
-                                        mapList[4]["maxTemp"].toString())),
-                                ChartData(
-                                    '5',
-                                    double.parse(
-                                        mapList[5]["maxTemp"].toString())),
-                              ],
-                              color: Colors.orange,
-                              width: 2,
-                              xValueMapper: (ChartData data, _) => data.x,
-                              yValueMapper: (ChartData data, _) => data.y,
-                            )
-                          ],
-                          primaryYAxis: NumericAxis(
-                              majorGridLines: const MajorGridLines(width: 0),
-                              majorTickLines: const MajorTickLines(width: 0),
-                              isVisible: false,
-                              minimum: findMin(mapList),
-                              maximum: findMax(mapList)),
-                        ),
-                      ),
-                    )
+                    _buildLineChart()
                   ],
                 ))));
+  }
+
+  /// 构造动态背景
+  _buildBackground() {
+    if (_weatherNowResp!.now.text.contains("雨")) {
+      if (_weatherNowResp!.now.text.contains("小")) {
+        return WeatherBg(
+            weatherType: WeatherType.lightRainy, height: 982.h, width: 411.w);
+      } else if (_weatherNowResp!.now.text.contains("中")) {
+        return WeatherBg(
+            weatherType: WeatherType.middleRainy, height: 982.h, width: 411.w);
+      } else {
+        return WeatherBg(
+            weatherType: WeatherType.heavyRainy, height: 982.h, width: 411.w);
+      }
+    } else {
+      return Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            tileMode: TileMode.mirror,
+            begin: Alignment.topLeft,
+            end: Alignment.bottomLeft,
+            colors: [
+              Color(0xffC17B18),
+              Color(0xffE3281F),
+              Color(0xff433D23),
+            ],
+            stops: [
+              0,
+              0.3,
+              1,
+            ],
+          ),
+          backgroundBlendMode: BlendMode.exclusion,
+        ),
+        child: PlasmaRenderer(
+          type: PlasmaType.infinity,
+          particles: 24,
+          color: const Color(0x449ce3d7),
+          blur: 0.07,
+          size: 0.1,
+          speed: 1.97,
+          offset: 4.63,
+          blendMode: BlendMode.screen,
+          particleType: ParticleType.circle,
+          variation1: 0.26,
+          variation2: 0.29,
+          variation3: 0.39,
+          rotation: 1.16,
+          fps: 60,
+        ),
+      );
+    }
+  }
+
+  /// 构造天气预报卡片
+  _buildReportCard() {
+    return Card(
+      //color: Colors.blueAccent,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(20.0)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      color: Colors.white70,
+      elevation: 20.0,
+      margin: const EdgeInsets.only(left: 40, top: 30, right: 40, bottom: 0).r,
+      child: Container(
+        margin: const EdgeInsets.only(top: 15, bottom: 15, left: 9, right: 9).r,
+        child: Row(
+          children: [
+            Column(
+              children: [
+                Container(
+                  margin:
+                      const EdgeInsets.only(left: 0, bottom: 0, right: 10.6).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[0].putIfAbsent("date", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(
+                    right: 10.6,
+                    left: 0,
+                    top: 5,
+                  ).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[0].putIfAbsent("weekday", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(right: 14.6, left: 4, top: 5).r,
+                  child: Image(
+                    image: AssetImage(mapList[0]
+                        .putIfAbsent("imageDay", () => "-1")
+                        .toString()),
+                    height: 32.w,
+                    width: 32.w,
+                  ),
+                ),
+                Container(
+                  margin:
+                      const EdgeInsets.only(right: 10.6, top: 5, bottom: 50).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[0].putIfAbsent("maxTemp", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(right: 10.6, top: 50).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[0].putIfAbsent("minTemp", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(right: 14.6, left: 4, top: 5).r,
+                  child: Image(
+                    image: AssetImage(mapList[0]
+                        .putIfAbsent("imageNight", () => "-1")
+                        .toString()),
+                    height: 32.w,
+                    width: 32.w,
+                  ),
+                ),
+              ],
+            ),
+
+            //------------分割线--------------
+
+            Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(left: 10.6, right: 10.6).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[1].putIfAbsent("date", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Container(
+                  margin:
+                      const EdgeInsets.only(right: 10.6, left: 10.6, top: 5).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[1].putIfAbsent("weekday", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(top: 5, left: 14.6, right: 14.6).r,
+                  child: Image(
+                    image: AssetImage(mapList[1]
+                        .putIfAbsent("imageDay", () => "-1")
+                        .toString()),
+                    height: 32.w,
+                    width: 32.w,
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(
+                          top: 5, bottom: 50, left: 10.6, right: 10.6)
+                      .r,
+                  alignment: Alignment.center,
+                  width: 40.w,
+                  child: Text(
+                      mapList[1].putIfAbsent("maxTemp", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Container(
+                  margin:
+                      const EdgeInsets.only(top: 50, left: 10.6, right: 10.6).r,
+                  alignment: Alignment.center,
+                  width: 40.w,
+                  child: Text(
+                      mapList[1].putIfAbsent("minTemp", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(top: 5, left: 14.6, right: 14.6).r,
+                  child: Image(
+                    image: AssetImage(mapList[1]
+                        .putIfAbsent("imageNight", () => "-1")
+                        .toString()),
+                    height: 32.w,
+                    width: 32.w,
+                  ),
+                ),
+              ],
+            ),
+
+            //------------分割线--------------
+
+            Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(left: 10.6, right: 10.6).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[2].putIfAbsent("date", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Container(
+                  margin:
+                      const EdgeInsets.only(right: 10.6, left: 10.6, top: 5).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[2].putIfAbsent("weekday", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(top: 5, left: 14.6, right: 14.6).r,
+                  child: Image(
+                    image: AssetImage(mapList[2]
+                        .putIfAbsent("imageDay", () => "-1")
+                        .toString()),
+                    height: 32.w,
+                    width: 32.w,
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(
+                          top: 5, bottom: 50, left: 10.6, right: 10.6)
+                      .r,
+                  alignment: Alignment.center,
+                  width: 40.w,
+                  child: Text(
+                      mapList[2].putIfAbsent("maxTemp", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Container(
+                  margin:
+                      const EdgeInsets.only(top: 50, left: 10.6, right: 10.6).r,
+                  alignment: Alignment.center,
+                  width: 40.w,
+                  child: Text(
+                      mapList[2].putIfAbsent("minTemp", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(top: 5, left: 14.6, right: 14.6).r,
+                  child: Image(
+                    image: AssetImage(mapList[2]
+                        .putIfAbsent("imageNight", () => "-1")
+                        .toString()),
+                    height: 32.w,
+                    width: 32.w,
+                  ),
+                ),
+              ],
+            ),
+
+            //------------分割线--------------
+
+            Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(left: 10.6, right: 10.6).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[3].putIfAbsent("date", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Container(
+                  margin:
+                      const EdgeInsets.only(right: 10.6, left: 10.6, top: 5).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[3].putIfAbsent("weekday", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(top: 5, left: 14.6, right: 14.6).r,
+                  child: Image(
+                    image: AssetImage(mapList[3]
+                        .putIfAbsent("imageDay", () => "-1")
+                        .toString()),
+                    height: 32.w,
+                    width: 32.w,
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(
+                          top: 5, bottom: 50, left: 10.6, right: 10.6)
+                      .r,
+                  alignment: Alignment.center,
+                  width: 40.w,
+                  child: Text(
+                      mapList[3].putIfAbsent("maxTemp", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Container(
+                  margin:
+                      const EdgeInsets.only(top: 50, left: 10.6, right: 10.6).r,
+                  alignment: Alignment.center,
+                  width: 40.w,
+                  child: Text(
+                      mapList[3].putIfAbsent("minTemp", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(top: 5, left: 14.6, right: 14.6).r,
+                  child: Image(
+                    image: AssetImage(mapList[3]
+                        .putIfAbsent("imageNight", () => "-1")
+                        .toString()),
+                    height: 32.w,
+                    width: 32.w,
+                  ),
+                ),
+              ],
+            ),
+
+            //------------分割线--------------
+
+            Column(
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(left: 10.6, right: 10.6).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[4].putIfAbsent("date", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Container(
+                  margin:
+                      const EdgeInsets.only(right: 10.6, left: 10.6, top: 5).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[4].putIfAbsent("weekday", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(top: 5, left: 14.6, right: 14.6).r,
+                  child: Image(
+                    image: AssetImage(mapList[4]
+                        .putIfAbsent("imageDay", () => "-1")
+                        .toString()),
+                    height: 32.w,
+                    width: 32.w,
+                  ),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(
+                          top: 5, bottom: 50, left: 10.6, right: 10.6)
+                      .r,
+                  alignment: Alignment.center,
+                  width: 40.w,
+                  child: Text(
+                      mapList[4].putIfAbsent("maxTemp", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Container(
+                  margin:
+                      const EdgeInsets.only(top: 50, left: 10.6, right: 10.6).r,
+                  alignment: Alignment.center,
+                  width: 40.w,
+                  child: Text(
+                      mapList[4].putIfAbsent("minTemp", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(top: 5, left: 14.6, right: 14.6).r,
+                  child: Image(
+                    image: AssetImage(mapList[4]
+                        .putIfAbsent("imageNight", () => "-1")
+                        .toString()),
+                    height: 32.w,
+                    width: 32.w,
+                  ),
+                ),
+              ],
+            ),
+
+            //------------分割线--------------
+
+            Column(
+              children: [
+                Container(
+                  margin:
+                      const EdgeInsets.only(right: 0, bottom: 0, left: 10.6).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[5].putIfAbsent("date", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(
+                    left: 10.6,
+                    right: 0,
+                    top: 5,
+                  ).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[5].putIfAbsent("weekday", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(left: 14.6, right: 4, top: 5).r,
+                  child: Image(
+                    image: AssetImage(mapList[5]
+                        .putIfAbsent("imageDay", () => "-1")
+                        .toString()),
+                    height: 32.w,
+                    width: 32.w,
+                  ),
+                ),
+                Container(
+                  margin:
+                      const EdgeInsets.only(left: 10.6, top: 5, bottom: 50).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[5].putIfAbsent("maxTemp", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(left: 10.6, top: 50).r,
+                  width: 40.w,
+                  alignment: Alignment.center,
+                  child: Text(
+                      mapList[5].putIfAbsent("minTemp", () => "-1").toString(),
+                      style: textStyle16),
+                ),
+                Padding(
+                  padding:
+                      const EdgeInsets.only(left: 14.6, right: 4, top: 5).r,
+                  child: Image(
+                    image: AssetImage(mapList[5]
+                        .putIfAbsent("imageNight", () => "-1")
+                        .toString()),
+                    height: 32.w,
+                    width: 32.w,
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 构造天气信息卡片
+  _buildInfoCard() {
+    return Card(
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.all(Radius.circular(20.0)),
+      ),
+      clipBehavior: Clip.antiAlias,
+      color: Colors.white70,
+      elevation: 20.0,
+      margin: const EdgeInsets.only(top: 30, left: 40, right: 40).r,
+      child: Container(
+        margin: const EdgeInsets.only(top: 15, bottom: 15, left: 9).r,
+        child: Row(
+          children: [
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only(right: 5, top: 5).r,
+                  child: Image(
+                    image: const AssetImage("asset/images/wind.png"),
+                    width: 32.w,
+                    height: 32.w,
+                  ),
+                ),
+                Container(
+                    margin: const EdgeInsets.only(top: 30, right: 5).r,
+                    child: Image(
+                      image: const AssetImage("asset/images/kongqishidu.png"),
+                      width: 32.w,
+                      height: 32.w,
+                    )),
+                Container(
+                    margin: const EdgeInsets.only(top: 30, right: 5).r,
+                    child: Image(
+                      image: const AssetImage("asset/images/sunny.png"),
+                      width: 32.w,
+                      height: 32.w,
+                    )),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only().r,
+                  child: Text(windDirection, style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 20).r,
+                  child: Text(windScale, style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only().r,
+                  child: Text("相对湿度", style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 25).r,
+                  child: Text(relativeHumidity, style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only().r,
+                  child: Text("紫外线强度等级", style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only().r,
+                  child: Text(ultravioletIntensity, style: textStyle16),
+                ),
+              ],
+            ),
+            Column(
+              mainAxisAlignment: MainAxisAlignment.start,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                    margin: const EdgeInsets.only(
+                            right: 5, bottom: 0, top: 5, left: 52)
+                        .r,
+                    child: Image(
+                      image: const AssetImage("asset/images/tiwenji.png"),
+                      width: 32.w,
+                      height: 32.w,
+                    )),
+                Container(
+                    margin:
+                        const EdgeInsets.only(top: 30, right: 5, left: 52).r,
+                    child: Image(
+                      image: const AssetImage(
+                          "asset/images/xiaoshijiangyuliang.png"),
+                      width: 32.w,
+                      height: 32.w,
+                    )),
+                Container(
+                    margin:
+                        const EdgeInsets.only(top: 30, right: 5, left: 52).r,
+                    child: Image(
+                      image: const AssetImage("asset/images/daolu-mian.png"),
+                      width: 32.w,
+                      height: 32.w,
+                    )),
+              ],
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Container(
+                  margin: const EdgeInsets.only().r,
+                  child: Text("体感温度", style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 20).r,
+                  child: Text(apparentTemperature, style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only().r,
+                  child: Text("降水量", style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only(bottom: 25).r,
+                  child: Text(precipitation, style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only().r,
+                  child: Text("可见度", style: textStyle16),
+                ),
+                Container(
+                  margin: const EdgeInsets.only().r,
+                  child: Text(visibility, style: textStyle16),
+                ),
+              ],
+            )
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// 构造生活指数卡片
+  _buildLivingIndexCard() {
+    return Card(
+      color: Colors.white70,
+      elevation: 20.0,
+      margin: const EdgeInsets.only(top: 30, left: 40).r,
+      child: Container(
+        width: 330.w,
+        alignment: Alignment.bottomLeft,
+        margin: const EdgeInsets.only(left: 9, right: 9).r,
+        child: Text(livingIndex,
+            strutStyle: const StrutStyle(leading: 0.9),
+            style: TextStyle(
+                color: Colors.blueGrey.shade700,
+                fontSize: 16.sp,
+                fontWeight: FontWeight.w500,
+                wordSpacing: 1.5,
+                fontFamily: "Noto_Sans_SC"),
+            softWrap: true,
+            textAlign: TextAlign.left),
+      ),
+    );
+  }
+
+  /// 构造天气预报折线图
+  _buildLineChart() {
+    return Positioned(
+      bottom: 410.w,
+      right: 25.h,
+      child: SizedBox(
+        width: 370.w,
+        height: 110.h,
+        child: SfCartesianChart(
+          plotAreaBorderWidth: 0,
+          primaryXAxis: CategoryAxis(
+              majorGridLines: const MajorGridLines(width: 0),
+              majorTickLines: const MajorTickLines(width: 0),
+              isVisible: false),
+          series: <ChartSeries>[
+            LineSeries<ChartData, String>(
+                dataSource: [
+                  // Bind data source
+                  ChartData(
+                      '0', double.parse(mapList[0]["minTemp"].toString())),
+                  ChartData(
+                      '1', double.parse(mapList[1]["minTemp"].toString())),
+                  ChartData(
+                      '2', double.parse(mapList[2]["minTemp"].toString())),
+                  ChartData(
+                      '3', double.parse(mapList[3]["minTemp"].toString())),
+                  ChartData(
+                      '4', double.parse(mapList[4]["minTemp"].toString())),
+                  ChartData(
+                      '5', double.parse(mapList[5]["minTemp"].toString())),
+                ],
+                color: Colors.blue,
+                width: 2,
+                xValueMapper: (ChartData data, _) => data.x,
+                yValueMapper: (ChartData data, _) => data.y),
+            LineSeries<ChartData, String>(
+              dataSource: [
+                // Bind data source
+                ChartData('0', double.parse(mapList[0]["maxTemp"].toString())),
+                ChartData('1', double.parse(mapList[1]["maxTemp"].toString())),
+                ChartData('2', double.parse(mapList[2]["maxTemp"].toString())),
+                ChartData('3', double.parse(mapList[3]["maxTemp"].toString())),
+                ChartData('4', double.parse(mapList[4]["maxTemp"].toString())),
+                ChartData('5', double.parse(mapList[5]["maxTemp"].toString())),
+              ],
+              color: Colors.orange,
+              width: 2,
+              xValueMapper: (ChartData data, _) => data.x,
+              yValueMapper: (ChartData data, _) => data.y,
+            )
+          ],
+          primaryYAxis: NumericAxis(
+              majorGridLines: const MajorGridLines(width: 0),
+              majorTickLines: const MajorTickLines(width: 0),
+              isVisible: false,
+              minimum: findMin(mapList),
+              maximum: findMax(mapList)),
+        ),
+      ),
+    );
   }
 }
 
@@ -1482,7 +1337,7 @@ class ChartData {
   final double y;
 }
 
-///让应用可以保持后台
+/// 让应用可以保持后台
 class AppRetainWidget extends StatelessWidget {
   const AppRetainWidget({Key? key, required this.child}) : super(key: key);
 

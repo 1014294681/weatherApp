@@ -127,7 +127,7 @@ class _CitySearchState extends State<CitySearch> {
       },
       child: Card(
           color: Colors.white70,
-          elevation: 4,
+          elevation: 20.0,
           margin: const EdgeInsets.only(top: 20, left: 30, right: 30).r,
           child: Container(
             alignment: Alignment.center,
