@@ -12,7 +12,6 @@ class CitySearch extends StatefulWidget {
 
 class _CitySearchState extends State<CitySearch> {
   final FocusNode _focusNode = FocusNode();
-  late ScrollController _controller;
   List<GeoPoiLocation> locationList = [];
   late String adm1;
   late String adm2;
@@ -22,13 +21,11 @@ class _CitySearchState extends State<CitySearch> {
   @override
   void initState() {
     super.initState();
-    _controller = ScrollController();
   }
 
   @override
   void dispose() {
     _focusNode.dispose();
-    _controller.dispose();
     super.dispose();
   }
 
@@ -93,17 +90,21 @@ class _CitySearchState extends State<CitySearch> {
                       )),
                     ),
                     Expanded(
-                      child: ListView.builder(
-                        controller: _controller,
-                        shrinkWrap: true,
-                        itemCount: locationList.length,
-                        itemBuilder: (context, index) => _buildItem(
-                            locationList[index].adm1,
-                            locationList[index].adm2,
-                            locationList[index].name,
-                            locationList[index].id),
+                        child: Scrollbar(
+                          thumbVisibility: true,
+                          radius: const Radius.circular(3),
+                          thickness: 6.h,
+
+                          child: ListView.builder(
+                            shrinkWrap: true,
+                            itemCount: locationList.length,
+                            itemBuilder: (context, index) => _buildItem(
+                                locationList[index].adm1,
+                                locationList[index].adm2,
+                                locationList[index].name,
+                                locationList[index].id),
                       ),
-                    )
+                    ))
                   ],
                 ),
               ),

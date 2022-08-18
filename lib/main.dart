@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:math';
+import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:amap_flutter_location/amap_flutter_location.dart';
@@ -10,12 +11,10 @@ import 'package:flutter_qweather/constants.dart';
 import 'package:flutter_qweather/flutter_qweather.dart';
 import 'package:intl/intl.dart';
 import 'package:intl/date_symbol_data_local.dart';
-import 'dart:io';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
 import 'package:simple_animations/simple_animations.dart';
 import 'package:flutter_weather_bg_null_safety/flutter_weather_bg.dart';
-
 import 'citySearch.dart';
 
 ///程序入口
@@ -55,6 +54,7 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
+  late int count=0;
   WeatherNowResp? _weatherNowResp;
   late WeatherDailyResp _weatherDailyResp;
   WeatherHourlyResp? _hourlyResp;
@@ -640,56 +640,60 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   /// 构造动态背景
-  _buildBackground() {
-    if (_weatherNowResp!.now.text.contains("雨")) {
-      if (_weatherNowResp!.now.text.contains("小")) {
-        return WeatherBg(
-            weatherType: WeatherType.lightRainy, height: 982.h, width: 411.w);
-      } else if (_weatherNowResp!.now.text.contains("中")) {
-        return WeatherBg(
-            weatherType: WeatherType.middleRainy, height: 982.h, width: 411.w);
-      } else {
-        return WeatherBg(
-            weatherType: WeatherType.heavyRainy, height: 982.h, width: 411.w);
+  Widget _buildBackground(){
+    if (count > 1) {
+      if (_weatherNowResp!.now.text.contains("雨")) {
+        if (_weatherNowResp!.now.text.contains("小")) {
+          return WeatherBg(
+              weatherType: WeatherType.lightRainy, height: 982.h, width: 411.w);
+        } else if (_weatherNowResp!.now.text.contains("中")) {
+          return WeatherBg(
+              weatherType: WeatherType.middleRainy,
+              height: 982.h,
+              width: 411.w);
+        } else {
+          return WeatherBg(
+              weatherType: WeatherType.heavyRainy, height: 982.h, width: 411.w);
+        }
       }
-    } else {
-      return Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            tileMode: TileMode.mirror,
-            begin: Alignment.topLeft,
-            end: Alignment.bottomLeft,
-            colors: [
-              Color(0xffC17B18),
-              Color(0xffE3281F),
-              Color(0xff433D23),
-            ],
-            stops: [
-              0,
-              0.3,
-              1,
-            ],
-          ),
-          backgroundBlendMode: BlendMode.exclusion,
-        ),
-        child: PlasmaRenderer(
-          type: PlasmaType.infinity,
-          particles: 24,
-          color: const Color(0x449ce3d7),
-          blur: 0.07,
-          size: 0.1,
-          speed: 1.97,
-          offset: 4.63,
-          blendMode: BlendMode.screen,
-          particleType: ParticleType.circle,
-          variation1: 0.26,
-          variation2: 0.29,
-          variation3: 0.39,
-          rotation: 1.16,
-          fps: 60,
-        ),
-      );
     }
+    count++;
+    return Container(
+      decoration: const BoxDecoration(
+        gradient: LinearGradient(
+          tileMode: TileMode.mirror,
+          begin: Alignment.topLeft,
+          end: Alignment.bottomLeft,
+          colors: [
+            Color(0xffC17B18),
+            Color(0xffE3281F),
+            Color(0xff433D23),
+          ],
+          stops: [
+            0,
+            0.3,
+            1,
+          ],
+        ),
+        backgroundBlendMode: BlendMode.exclusion,
+      ),
+      child: PlasmaRenderer(
+        type: PlasmaType.infinity,
+        particles: 24,
+        color: const Color(0x449ce3d7),
+        blur: 0.07,
+        size: 0.1,
+        speed: 1.97,
+        offset: 4.63,
+        blendMode: BlendMode.screen,
+        particleType: ParticleType.circle,
+        variation1: 0.26,
+        variation2: 0.29,
+        variation3: 0.39,
+        rotation: 1.16,
+        fps: 60,
+      ),
+    );
   }
 
   /// 构造天气预报卡片
