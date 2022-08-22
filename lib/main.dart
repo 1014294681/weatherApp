@@ -1275,8 +1275,9 @@ class _MyHomePageState extends State<MyHomePage> {
   /// 构造天气预报折线图
   _buildLineChart() {
     return Positioned(
-      bottom: 410.w,
-      right: 25.h,
+      //bottom: 410.w,
+      top: 250.2.h+64.w+50.r,
+      right: 23.w,
       child: SizedBox(
         width: 370.w,
         height: 110.h,
