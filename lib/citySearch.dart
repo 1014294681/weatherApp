@@ -52,20 +52,20 @@ class _CitySearchState extends State<CitySearch> {
                 child: Column(
                   children: [
                     Container(
-                      margin: const EdgeInsets.only(top: 20).r,
+                      margin: EdgeInsets.only(top: 20.h,bottom: 0.h,left: 0.w,right: 0.w),
                       height: 100.h,
                       child: SafeArea(
                           child: TextField(
                         //controller: _controller,
                         style: TextStyle(
-                            color: Colors.blueGrey.shade700, fontSize: 20.sp),
+                            color: Colors.blueGrey.shade700, fontSize: 25.sp),
                         decoration: InputDecoration(
                             prefixIcon: Padding(
                               padding:
-                                  const EdgeInsets.only(top: 15, bottom: 15).r,
+                                  EdgeInsets.only(top: 5.h, bottom: 5.h,left: 0.w,right: 0.w),
                               child: const Image(
                                   fit: BoxFit.contain,
-                                  image: AssetImage("asset/images/sousuo.png"),
+                                  image: AssetImage("asset/images/search.png"),
                                   alignment: Alignment.center),
                             ),
                             fillColor: Colors.white70,
@@ -129,7 +129,7 @@ class _CitySearchState extends State<CitySearch> {
       child: Card(
           color: Colors.white70,
           elevation: 20.0,
-          margin: const EdgeInsets.only(top: 20, left: 30, right: 30).r,
+          margin: EdgeInsets.only(top: 20.h,bottom: 0.h, left: 30.w, right: 30.w),
           child: Container(
             alignment: Alignment.center,
             height: 50.h,
