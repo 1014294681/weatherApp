@@ -48,7 +48,7 @@ android {
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-build-configuration.
         minSdkVersion 19
-        targetSdkVersion 31
+        targetSdkVersion 33
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
         defaultConfig{
@@ -66,15 +66,7 @@ android {
         }
 
     }
-    /**signingConfigs {
-        debug{
-            storeFile file('/Users/edc/Desktop/new.keystore')
-            storePassword "123456"
-            keyAlias "key0"
-            keyPassword "123456"
-        }
-    }
- **/
+
 }
 
 flutter {

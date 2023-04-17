@@ -515,9 +515,10 @@ class _MyHomePageState extends State<MyHomePage> {
         }
       }
       apparentTemperature = "${_weatherNowResp!.now.feelsLike}°";
-      if(_airDailyResp!=null){
+      if (_airDailyResp != null && _airDailyResp!.daily.isNotEmpty) {
         todayAirQuality ="${_airDailyResp!.daily[0].category}${" "}${_airDailyResp!.daily[0].aqi}";
       }
+
       precipitation = "${_weatherNowResp!.now.precip}mm";
       visibility = "${_weatherNowResp!.now.vis}km";
       windScale = "${_weatherNowResp!.now.windScale}级";

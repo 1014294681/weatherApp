@@ -43,58 +43,60 @@ class _CitySearchState extends State<CitySearch> {
                 hideKeyboard(context);
               },
               child: Container(
-                //color: Colors.lightBlueAccent,
                 decoration: const BoxDecoration(
-                    gradient: LinearGradient(
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                        colors: [Color(0x9B91EAFF), Colors.blueGrey])),
+                  gradient: LinearGradient(
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter,
+                      colors: [Color(0x9B91EAFF), Colors.blueGrey]
+                  ),
+                ),
                 child: Column(
                   children: [
                     Container(
                       margin: EdgeInsets.only(top: 20.h,bottom: 0.h,left: 0.w,right: 0.w),
-                      height: 100.h,
+                      height: 70.h,
                       child: SafeArea(
-                          child: TextField(
-                        //controller: _controller,
-                        style: TextStyle(
-                            color: Colors.blueGrey.shade700, fontSize: 25.sp),
-                        decoration: InputDecoration(
-                            prefixIcon: Padding(
-                              padding:
-                                  EdgeInsets.only(top: 5.h, bottom: 5.h,left: 0.w,right: 0.w),
-                              child: const Image(
-                                  fit: BoxFit.contain,
-                                  image: AssetImage("asset/images/search.png"),
-                                  alignment: Alignment.center),
-                            ),
-                            fillColor: Colors.white70,
-                            filled: true,
-                            border: const OutlineInputBorder(),
-                            labelText: "请输入",
-                            labelStyle: TextStyle(
-                                color: Colors.blueGrey.shade700,
-                                fontSize: 20.sp)),
-                        onChanged: (v) async {
-                          GeoPoiLocationResp? locationResp =
-                              await FlutterQweather.instance
-                                  .geoCityLookup(v, number: 20, range: "cn");
-                          locationList = locationResp!.locations;
-                          for (var element in locationList) {
-                            if (element.adm2 == element.name) {
-                              element.adm2 = "";
+                        child: TextField(
+                          style: TextStyle(
+                              color: Colors.blueGrey.shade700,
+                              fontSize: 25.sp
+                          ),
+                          decoration: InputDecoration(
+                              prefixIcon: Padding(
+                                padding: EdgeInsets.only(top: 5.h, bottom: 5.h,left: 0.w,right: 0.w),
+                                child: const Image(
+                                    fit: BoxFit.contain,
+                                    image: AssetImage("asset/images/search.png"),
+                                    alignment: Alignment.center
+                                ),
+                              ),
+                              fillColor: Colors.white70,
+                              filled: true,
+                              border: const OutlineInputBorder(),
+                              labelText: "请输入",
+                              labelStyle: TextStyle(
+                                  color: Colors.blueGrey.shade700,
+                                  fontSize: 20.sp
+                              )
+                          ),
+                          onChanged: (v) async {
+                            GeoPoiLocationResp? locationResp = await FlutterQweather.instance.geoCityLookup(v, number: 20, range: "cn");
+                            locationList = locationResp!.locations;
+                            for (var element in locationList) {
+                              if (element.adm2 == element.name) {
+                                element.adm2 = "";
+                              }
                             }
-                          }
-                          setState(() {});
-                        },
-                      )),
+                            setState(() {});
+                          },
+                        ),
+                      ),
                     ),
                     Expanded(
                         child: Scrollbar(
                           thumbVisibility: true,
                           radius: const Radius.circular(3),
                           thickness: 6.h,
-
                           child: ListView.builder(
                             shrinkWrap: true,
                             itemCount: locationList.length,
@@ -102,17 +104,19 @@ class _CitySearchState extends State<CitySearch> {
                                 locationList[index].adm1,
                                 locationList[index].adm2,
                                 locationList[index].name,
-                                locationList[index].id),
-                      ),
-                    ))
+                                locationList[index].id
+                            ),
+                          ),
+                        )
+                    )
                   ],
                 ),
               ),
-            ));
+            )
+        );
       },
     );
   }
-
   void hideKeyboard(BuildContext context) {
     FocusScopeNode currentFocus = FocusScope.of(context);
     if (!currentFocus.hasPrimaryFocus && currentFocus.focusedChild != null) {
